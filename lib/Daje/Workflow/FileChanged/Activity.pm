@@ -1,7 +1,8 @@
 package Daje::Workflow::FileChanged::Activity;
 use Mojo::Base 'Daje::Workflow::Common::Activity::Base', -base, -signatures;
 
-
+use Daje::Config;
+use Daje::Tools::Filechanged;
 # NAME
 #
 # Daje::Workflow::FileChanged::Activity - It's new $module
@@ -40,6 +41,21 @@ use Mojo::Base 'Daje::Workflow::Common::Activity::Base', -base, -signatures;
 our $VERSION = "0.01";
 
 sub changed_files($self) {
+
+    my $filelist = Daje::Config->new(
+        path => $self->context->{context}->{source_dir}
+    )->load_list();
+
+    my $filehash = Daje::Workflow::FileChanged::Database::Model::FileHashes->new(db => $self->db);
+    $filelist->each(sub ($file, $num) {
+        my $hash_data = $filehash->load_hash($file);
+        unless (defined $hash) {
+            my $hash = Daje::Tools::Filechanged->new()->load_new_hash($file);
+            $filehash->save_hash($file, $hash);
+        } else {
+
+        }
+    });
 
 }
 
