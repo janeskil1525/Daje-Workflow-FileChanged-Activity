@@ -3,6 +3,7 @@ use Mojo::Base 'Daje::Workflow::Common::Activity::Base', -base, -signatures;
 
 use Daje::Config;
 use Daje::Tools::Filechanged;
+
 # NAME
 #
 # Daje::Workflow::FileChanged::Activity - It's new $module
@@ -10,6 +11,15 @@ use Daje::Tools::Filechanged;
 # SYNOPSIS
 # ========
 #    use Daje::Workflow::FileChanged::Activity;
+#
+#    my $activity = Daje::Workflow::FileChanged::Activity->new(
+#           db => $db,
+#           context => $context,
+#           error => $error,
+#    );
+#
+#    $activity->changed_files();
+#
 #
 # DESCRIPTION
 # ===========
@@ -42,25 +52,33 @@ our $VERSION = "0.01";
 
 sub changed_files($self) {
 
+    my @changed_files;
     my $filelist = Daje::Config->new(
         path => $self->context->{context}->{source_dir}
     )->load_list();
 
     my $filehash = Daje::Workflow::FileChanged::Database::Model::FileHashes->new(db => $self->db);
+    my $changed = Daje::Tools::Filechanged->new();
     $filelist->each(sub ($file, $num) {
         my $hash_data = $filehash->load_hash($file);
-        unless (defined $hash) {
-            my $hash = Daje::Tools::Filechanged->new()->load_new_hash($file);
+        unless (defined $hash_data) {
+            my $hash = $changed->load_new_hash($file);
             $filehash->save_hash($file, $hash);
+            push (@changed_files, $file);
         } else {
-
+            if($changed->is_file_changed($file, $hash_data)) {
+                push (@changed_files, $file);
+            }
         }
     });
-
+    if (@changed_files > 0) {
+        $self->context->{context}->{changed_files} = \@changed_files;
+    }
 }
 
 1;
 __END__
+
 
 
 
@@ -74,6 +92,15 @@ Daje::Workflow::FileChanged::Activity
 =head1 SYNOPSIS
 
    use Daje::Workflow::FileChanged::Activity;
+
+   my $activity = Daje::Workflow::FileChanged::Activity->new(
+          db => $db,
+          context => $context,
+          error => $error,
+   );
+
+   $activity->changed_files();
+
 
 
 
@@ -97,6 +124,10 @@ it under the same terms as Perl itself.
 
 
 =head1 REQUIRES
+
+L<Daje::Tools::Filechanged> 
+
+L<Daje::Config> 
 
 L<Mojo::Base> 
 
