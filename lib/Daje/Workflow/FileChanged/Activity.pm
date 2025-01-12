@@ -57,7 +57,7 @@ sub changed_files($self) {
     my $filelist = Daje::Config->new(
         path => $self->context->{context}->{source_dir}
     )->load_list();
-
+    $self->model->insert_history($filelist->size . " files found", "Daje::Workflow::FileChanged::Activity",0)
     my $filehash = Daje::Workflow::FileChanged::Database::Model::FileHashes->new(
         db => $self->db
     );
@@ -74,6 +74,8 @@ sub changed_files($self) {
             }
         }
     });
+
+    $self->model->insert_history(scalar(@changed_files) . " changed files found", "Daje::Workflow::FileChanged::Activity",0)
     if (@changed_files > 0) {
         $self->context->{context}->{changed_files} = \@changed_files;
     }
